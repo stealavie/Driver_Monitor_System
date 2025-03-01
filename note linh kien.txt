@@ -1,0 +1,7 @@
++ ESP32: 119k
++ Module L298N: 34k
++ Dây nốiesp32: 
++ Đồ lặt vặt khác: mỗi người 20k
++ Buzzer:
++ Cảm biến siêuam HC-SR04
++ Servo motor
