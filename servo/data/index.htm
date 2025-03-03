@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arduino Radar Visualization</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #121212;
+      color: white;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      margin: 20px 0;
+    }
+
+    canvas {
+      display: block;
+      margin: 20px auto;
+      background-color: #222;
+      border: 1px solid #444;
+    }
+
+    #status {
+      margin-top: 10px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Arduino Radar Visualization</h1>
+  <canvas id="radarCanvas" width="500" height="250"></canvas>
+  <div id="status">Connecting to WebSocket...</div>
+
+  <script>
+    const canvas = document.getElementById('radarCanvas');
+    const ctx = canvas.getContext('2d');
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height;
+    const radius = 200;
+
+    let websocket;
+    let radarData = []; // Array to store radar data (angle and distance)
+    let sweepAngle = 0; // Current angle of the radar sweep
+
+    // Draw the radar background (half-circle)
+    function drawRadarBackground() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw radar circles
+      ctx.strokeStyle = '#444';
+      ctx.lineWidth = 1;
+      for (let i = 1; i <= 4; i++) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, (radius / 4) * i, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+      }
+
+      // Draw radar lines
+      ctx.strokeStyle = '#555';
+      for (let angle = 0; angle <= 180; angle += 30) {
+        const radian = (angle * Math.PI) / 180;
+        const x = centerX + radius * Math.cos(radian);
+        const y = centerY - radius * Math.sin(radian);
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+      }
+    }
+
+    // Draw the radar sweep and detected points
+    function drawRadarSweep() {
+      drawRadarBackground();
+
+      // Draw detected points
+      radarData.forEach((data) => {
+        const angle = data.angle;
+        const distance = data.distance;
+
+        // Only display points with distance below 200 cm
+        if (distance < 200) {
+          // Convert polar coordinates to Cartesian coordinates
+          const radian = (angle * Math.PI) / 180;
+          const x = centerX + (distance / 200) * radius * Math.cos(radian);
+          const y = centerY - (distance / 200) * radius * Math.sin(radian);
+
+          // Draw the point
+          ctx.fillStyle = 'lime';
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      });
+
+      // Draw the sweeping line
+      const sweepRadian = (sweepAngle * Math.PI) / 180;
+      const sweepX = centerX + radius * Math.cos(sweepRadian);
+      const sweepY = centerY - radius * Math.sin(sweepRadian);
+      ctx.strokeStyle = 'lime';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(sweepX, sweepY);
+      ctx.stroke();
+    }
+
+    // Update the radar sweep angle
+    function updateSweep() {
+      sweepAngle += 2; // Increment the sweep angle
+      if (sweepAngle > 180) {
+        sweepAngle = 0; // Reset the sweep angle after completing a half-circle
+      }
+      drawRadarSweep();
+    }
+
+    // Connect to the WebSocket server
+    function connectWebSocket() {
+      websocket = new WebSocket('ws://192.168.1.7:8081/ws'); // Replace <ESP32_IP_ADDRESS> with your ESP32's IP address
+
+      websocket.onopen = () => {
+        document.getElementById('status').textContent = 'Connected to WebSocket!';
+      };
+
+      websocket.onmessage = (event) => {
+        const data = JSON.parse(event.data); // Parse the JSON data
+        const angle = data.angle;
+        const distance = data.distance;
+
+        // Add new radar data
+        radarData.push({ angle, distance });
+
+        // Remove the data after 1 second
+        setTimeout(() => {
+          radarData = radarData.filter((d) => d.angle !== angle);
+        }, 1000);
+      };
+
+      websocket.onclose = () => {
+        document.getElementById('status').textContent = 'WebSocket disconnected. Reconnecting...';
+        setTimeout(connectWebSocket, 1000); // Try to reconnect after 1 second
+      };
+
+      websocket.onerror = (error) => {
+        console.error('WebSocket Error:', error);
+      };
+    }
+
+    // Initialize the radar visualization
+    function initRadar() {
+      drawRadarBackground();
+      connectWebSocket();
+      setInterval(updateSweep, 50); // Update the sweep every 50ms
+    }
+
+    // Start the radar visualization
+    initRadar();
+  </script>
+</body>
+</html>
