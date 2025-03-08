@@ -1,3 +1,8 @@
+sendCommand = (command) => {
+    if (websocket) {
+        websocket.send(`SECURE_TOKEN_123:${command}`);
+    }
+};
 
 navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
@@ -20,6 +25,7 @@ document.addEventListener("keydown", function (event) {
     };
     if (keyMap[event.key]) {
         document.getElementById(keyMap[event.key]).classList.add("active");
+        sendCommand(keyMap[event.key]);
     }
 });
 
@@ -36,6 +42,7 @@ document.addEventListener("keyup", function (event) {
     };
     if (keyMap[event.key]) {
         document.getElementById(keyMap[event.key]).classList.remove("active");
+        sendCommand("stop");
     }
 });
 
@@ -112,11 +119,19 @@ function updateSweep() {
 
 function connectWebSocket() {
     websocket = new WebSocket('ws://192.168.2.16:8081/ws');
-    websocket.onopen = () => document.getElementById('status').textContent = 'Connected to WebSocket!';
     websocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        radarData.push({ angle: data.angle, distance: data.distance });
-        setTimeout(() => radarData = radarData.filter(d => d.angle !== data.angle), 1000);
+        const message = event.data;
+    
+        // Check if the message is a status update
+        if (message.startsWith("status:")) {
+            const statusMessage = message.substring(7); // Extract the status message
+            document.getElementById('status').textContent = statusMessage;
+        } else {
+            // Handle radar data
+            const data = JSON.parse(message);
+            radarData.push({ angle: data.angle, distance: data.distance });
+            setTimeout(() => radarData = radarData.filter(d => d.angle !== data.angle), 1000);
+        }
     };
     websocket.onclose = () => setTimeout(connectWebSocket, 1000);
 }

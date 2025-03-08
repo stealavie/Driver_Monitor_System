@@ -94,8 +94,13 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String message) {
 
 void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, 
                      AwsEventType type, void *arg, uint8_t *data, size_t len) {
-  if (type == WS_EVT_DATA) {
+  if (type == WS_EVT_CONNECT) {
+    // Send a status message to the client
+    client->text("status:Connected to ESP32 WebSocket!");
+  } else if (type == WS_EVT_DATA) {
     handleWebSocketMessage(client, String((char*)data, len));
+  } else if (type == WS_EVT_DISCONNECT) {
+    Serial.printf("Client %u disconnected\n", client->id());
   }
 }
 
@@ -148,6 +153,13 @@ void setup() {
   wm.resetSettings();
   if (!wm.autoConnect("CarControllerAP")) {
     ESP.restart();
+  }
+
+  // Connection status
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Failed to connect to Wi-Fi");
+  } else {
+      Serial.println("Connected to Wi-Fi");
   }
 
   // Print network information
