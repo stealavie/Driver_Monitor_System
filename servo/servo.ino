@@ -1,7 +1,6 @@
-#include <WiFiManager.h>
+#include <WiFi.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
-#include <LittleFS.h>
 #include <ESP32Servo.h>
 
 // Hardware Configuration
@@ -17,11 +16,14 @@
 #define SERVO_SPEED       1   // degrees per update
 #define MOTOR_TIMEOUT     250 // ms
 
+// Define AP credentials
+#define AP_SSID "ESP32_AP"
+#define AP_PASSWORD "12345678"
+
 // Global Objects
-AsyncWebServer server(8081);
+AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 Servo radarServo;
-WiFiManager wm;
 
 // System State
 typedef struct {
@@ -38,7 +40,7 @@ SystemState state;
 
 // Motor Control
 void controlMotor(uint8_t pin, bool state) {
-  Serial.println("hello");
+  Serial.print("hello");
   digitalWrite(pin, state ? HIGH : LOW);
   analogWrite(pin, state ? 200 : 0); // PWM speed control
 }
@@ -83,12 +85,13 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String message) {
   }
 
   String command = message.substring(message.indexOf(':')+1);
+  Serial.print(command);
   state.lastMotorAction = millis();
 
-  if (command == "forward") controlMotor(MOTOR_FORWARD, true);
-  else if (command == "backward") controlMotor(MOTOR_BACKWARD, true);
-  else if (command == "left") controlMotor(MOTOR_LEFT, true);
-  else if (command == "right") controlMotor(MOTOR_RIGHT, true);
+  if (command == "btn-up") controlMotor(MOTOR_FORWARD, true);
+  else if (command == "btn-down") controlMotor(MOTOR_BACKWARD, true);
+  else if (command == "btn-left") controlMotor(MOTOR_LEFT, true);
+  else if (command == "btn-right") controlMotor(MOTOR_RIGHT, true);
   else stopAllMotors();
 }
 
@@ -96,6 +99,7 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
                      AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
     // Send a status message to the client
+    Serial.printf("Client connected");
     client->text("status:Connected to ESP32 WebSocket!");
   } else if (type == WS_EVT_DATA) {
     handleWebSocketMessage(client, String((char*)data, len));
@@ -132,13 +136,32 @@ void initHardware() {
   radarServo.write(state.currentAngle);
 }
 
+// HTML content for the server
+const char index_html[] PROGMEM = R"rawliteral(
+<!DOCTYPE HTML><html>
+<head>
+  <title>ESP32 Web Server</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: Arial; text-align: center; margin:0px auto; padding-top: 30px; }
+    h1 { color: #0F3376; padding: 2vh; }
+  </style>
+</head>
+<body>
+  <h1>Hello World</h1>
+  <p>Welcome to ESP32 Web Server</p>
+</body>
+</html>
+)rawliteral";
+
 void initWebServer() {
-  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(LittleFS, "/index.html", "text/html");
-  });
+  // Short delay to ensure WiFi is stable
+  delay(500);
   
-  server.serveStatic("/", LittleFS, "/")
-    .setCacheControl("max-age=604800");
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    // Serve the HTML directly instead of using LittleFS
+    request->send(200, "text/html", index_html);
+  });
   
   ws.onEvent(onWebSocketEvent);
   server.addHandler(&ws);
@@ -146,38 +169,21 @@ void initWebServer() {
 
 void setup() {
   Serial.begin(115200);
-  LittleFS.begin(true);
   initHardware();
   
-  wm.setConnectTimeout(180);
-  wm.resetSettings();
-  if (!wm.autoConnect("CarControllerAP")) {
-    ESP.restart();
-  }
+  // Start WiFi as an Access Point
+  WiFi.softAP(AP_SSID, AP_PASSWORD);
+  
+  IPAddress IP = WiFi.softAPIP();
+  Serial.println("Access Point started");
+  Serial.print("AP IP address: ");
+  Serial.println(IP);
 
-  // Connection status
-  if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("Failed to connect to Wi-Fi");
-  } else {
-      Serial.println("Connected to Wi-Fi");
-  }
-
-  // Print network information
-  if (WiFi.getMode() & WIFI_AP) {
-    Serial.print("Configuration Portal IP: ");
-    Serial.println(WiFi.softAPIP());
-  }
-  else {
-    Serial.print("Connected to WiFi. Local IP: ");
-    Serial.println(WiFi.localIP());
-  }
-
-  Serial.print("WebSocket Server URL: ws://");
-  Serial.print(WiFi.getMode() & WIFI_AP ? WiFi.softAPIP() : WiFi.localIP());
-  Serial.println("/ws");
-
+  // initialize web server after AP is started
   initWebServer();
   server.begin();
+  
+  Serial.println("HTTP server started");
 }
 
 void loop() {
