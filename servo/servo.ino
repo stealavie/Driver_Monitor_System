@@ -4,9 +4,8 @@
 #include <ESP32Servo.h>
 
 // Hardware Configuration
-#define SERVO_PIN         27
-#define TRIG_PIN          12
-#define ECHO_PIN          14
+#define TRIG_PIN          2
+#define ECHO_PIN          4
 #define MOTOR_FORWARD     16
 #define MOTOR_BACKWARD    17
 #define MOTOR_LEFT        18
@@ -20,29 +19,23 @@
 #define AP_SSID "ESP32_AP"
 #define AP_PASSWORD "12345678"
 
-// Global Objects
+int servoPin = 5;
+
+struct SystemState {
+  unsigned long echoStart = 0;
+  unsigned long echoEnd = 0;
+  bool measuring = false;
+  unsigned long lastMotorAction = 0;
+};
+SystemState state;
+
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
 Servo radarServo;
 
-// System State
-typedef struct {
-  int currentAngle = 90;
-  int sweepDir = 1;
-  unsigned long lastUpdate = 0;
-  unsigned long lastMotorAction = 0;
-  volatile unsigned long echoStart = 0;
-  volatile unsigned long echoEnd = 0;
-  bool measuring = false;
-} SystemState;
-
-SystemState state;
-
 // Motor Control
-void controlMotor(uint8_t pin, bool state) {
-  Serial.print("hello");
-  digitalWrite(pin, state ? HIGH : LOW);
-  analogWrite(pin, state ? 200 : 0); // PWM speed control
+void controlMotor(uint8_t pin, bool stateVal) {
+  digitalWrite(pin, stateVal ? HIGH : LOW);
 }
 
 void stopAllMotors() {
@@ -52,29 +45,16 @@ void stopAllMotors() {
   controlMotor(MOTOR_RIGHT, false);
 }
 
-// Non-blocking Ultrasonic Measurement
-void IRAM_ATTR echoISR() {
-  if (digitalRead(ECHO_PIN)) {
-    state.echoStart = micros();
-  } else {
-    state.echoEnd = micros();
-    state.measuring = false;
-  }
-}
-
 int calculateDistance() {
-  if (state.measuring) return -1;
-  
-  state.measuring = true;
-  digitalWrite(TRIG_PIN, LOW);
-  delayMicroseconds(2);
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
-  
-  while(state.measuring) { delayMicroseconds(10); }
-  
-  return (state.echoEnd - state.echoStart) * 0.034 / 2;
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
+    
+    unsigned long duration = pulseIn(ECHO_PIN, HIGH, 30000);
+    if (duration == 0) return -1; // No echo received
+    return duration / 2 / 29.412;
 }
 
 // WebSocket Handlers
@@ -85,7 +65,6 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String message) {
   }
 
   String command = message.substring(message.indexOf(':')+1);
-  Serial.print(command);
   state.lastMotorAction = millis();
 
   if (command == "btn-up") controlMotor(MOTOR_FORWARD, true);
@@ -96,10 +75,9 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String message) {
 }
 
 void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, 
-                     AwsEventType type, void *arg, uint8_t *data, size_t len) {
+                        AwsEventType type, void *arg, uint8_t *data, size_t len) {
   if (type == WS_EVT_CONNECT) {
-    // Send a status message to the client
-    Serial.printf("Client connected");
+    Serial.println("Client connected");
     client->text("status:Connected to ESP32 WebSocket!");
   } else if (type == WS_EVT_DATA) {
     handleWebSocketMessage(client, String((char*)data, len));
@@ -108,35 +86,24 @@ void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client,
   }
 }
 
-// Servo Control
-void updateRadarPosition() {
-  if (millis() - state.lastUpdate < UPDATE_INTERVAL) return;
-  
-  state.currentAngle += state.sweepDir * SERVO_SPEED;
-  if (state.currentAngle >= 180 || state.currentAngle <= 0) {
-    state.sweepDir *= -1;
-  }
-  
-  radarServo.write(state.currentAngle);
-  state.lastUpdate = millis();
-}
-
-// System Initialization
 void initHardware() {
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(ECHO_PIN), echoISR, CHANGE);
 
   pinMode(MOTOR_FORWARD, OUTPUT);
   pinMode(MOTOR_BACKWARD, OUTPUT);
   pinMode(MOTOR_LEFT, OUTPUT);
   pinMode(MOTOR_RIGHT, OUTPUT);
+  stopAllMotors();
   
-  radarServo.attach(SERVO_PIN);
-  radarServo.write(state.currentAngle);
+  ESP32PWM::allocateTimer(0);
+  ESP32PWM::allocateTimer(1);
+  ESP32PWM::allocateTimer(2);
+  ESP32PWM::allocateTimer(3);
+  radarServo.setPeriodHertz(50);
+  radarServo.attach(servoPin, 1000, 2000);
 }
 
-// HTML content for the server
 const char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html>
 <head>
@@ -155,14 +122,9 @@ const char index_html[] PROGMEM = R"rawliteral(
 )rawliteral";
 
 void initWebServer() {
-  // Short delay to ensure WiFi is stable
-  delay(500);
-  
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    // Serve the HTML directly instead of using LittleFS
     request->send(200, "text/html", index_html);
   });
-  
   ws.onEvent(onWebSocketEvent);
   server.addHandler(&ws);
 }
@@ -171,38 +133,40 @@ void setup() {
   Serial.begin(115200);
   initHardware();
   
-  // Start WiFi as an Access Point
   WiFi.softAP(AP_SSID, AP_PASSWORD);
-  
-  IPAddress IP = WiFi.softAPIP();
-  Serial.println("Access Point started");
   Serial.print("AP IP address: ");
-  Serial.println(IP);
+  Serial.println(WiFi.softAPIP());
 
-  // initialize web server after AP is started
   initWebServer();
   server.begin();
-  
   Serial.println("HTTP server started");
 }
 
 void loop() {
-  // Autonomous servo control
-  updateRadarPosition();
-  
-  // Motor safety timeout
+  static int servoPos = 0;
+  static bool increasing = true;
+  static unsigned long lastUpdate = 0;
+
+  if (millis() - lastUpdate > UPDATE_INTERVAL) {
+    lastUpdate = millis();
+    radarServo.write(servoPos);
+
+    int distance = calculateDistance();
+    String data = String(servoPos) + "," + String(distance);
+    Serial.println(data);
+    ws.textAll(data);
+    ws.cleanupClients();
+
+    if (increasing) {
+      servoPos++;
+      if (servoPos >= 180) increasing = false;
+    } else {
+      servoPos--;
+      if (servoPos <= 0) increasing = true;
+    }
+  }
+
   if (millis() - state.lastMotorAction > MOTOR_TIMEOUT) {
     stopAllMotors();
   }
-
-  // Send sensor data
-  static unsigned long lastBroadcast = 0;
-  if (millis() - lastBroadcast >= 100) {
-    int distance = calculateDistance();
-    String data = String(state.currentAngle) + "," + String(distance);
-    ws.textAll(data);
-    lastBroadcast = millis();
-  }
-
-  ws.cleanupClients();
 }

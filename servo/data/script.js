@@ -135,7 +135,25 @@ document.addEventListener('DOMContentLoaded', (event) => {
             } else {
                 try {
                     // Handle radar data with error handling
-                    const data = JSON.parse(message);
+                    console.log('Received radar data:', message);
+                    if (message === "no_data") {
+                        console.warn('No radar data received');
+                        return;
+                    }
+                    let data;
+                    if (message.includes(',')) {
+                        // Parse "110,12" as CSV
+                        const parts = message.split(',').map(Number);
+                        data = { angle: parts[0], distance: parts[1] };
+                    } else {
+                        // Try JSON parsing
+                        data = JSON.parse(message);
+                    }
+
+                    if (typeof data.angle !== 'number' || typeof data.distance !== 'number') {
+                        console.error('Invalid radar data:', data);
+                        return;
+                    }
                     radarData.push({ angle: data.angle, distance: data.distance });
                     
                     // Limit array size for better performance
