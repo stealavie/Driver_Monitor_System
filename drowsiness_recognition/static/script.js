@@ -2,7 +2,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     let websocket;
     const PYTHON_SERVER_URL = 'http://localhost:5000/process_frame';
     let processingActive = true;
-    let lastFrameTime = 0;
     let frameCount = 0;
     let fpsUpdateInterval = null;
     let drowsinessAlertCount = 0;
@@ -114,20 +113,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             wsConnected = false;
             setTimeout(connectWebSocket, 1000);
         };
-    }
-
-    // Initialize the FPS counter
-    function initFPSCounter() {
-        fpsUpdateInterval = setInterval(() => {
-            const now = performance.now();
-            const elapsed = now - lastFrameTime;
-            if (elapsed > 0) {
-                const fps = Math.round((frameCount * 1000) / elapsed);
-                document.getElementById('fps-counter').textContent = fps;
-                lastFrameTime = now;
-                frameCount = 0;
-            }
-        }, 1000);
     }
 
     // Initialize face monitoring

@@ -4,7 +4,7 @@ import numpy as np
 import scipy.spatial.distance as dist
 import base64
 import json
-from flask import Flask, request, jsonify, send_from_directory, render_template_string, redirect, url_for
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import time
@@ -137,10 +137,6 @@ def index():
     else:
         # If not connected, show the connection check page
         return send_from_directory(STATIC_FOLDER, 'connection_check_page.htm')
-
-@app.route('/<path:filename>')
-def serve_static(filename):
-    return send_from_directory(STATIC_FOLDER, filename)
 
 if __name__ == "__main__":
     print(f"Server running at http://localhost:5000/")
