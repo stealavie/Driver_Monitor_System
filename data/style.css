@@ -1,0 +1,500 @@
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #1a2138;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+ }
+
+ .container-frame {
+    background-color: #232d4a;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 1670px;
+    height: 730px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: auto;
+ }
+ 
+ .row {
+    width: 95%;
+    display: flex;
+    align-items: center;
+    position: relative;
+    margin-bottom: 10px;
+    justify-content: center;
+    gap: 20px;
+ }
+ #car-camera {
+    width: 1540px;
+    height: 380px;
+    background-color: #343e67;
+    display: flex;
+    border-radius: 10px;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin: 0;
+    margin-top: 20px;
+ }
+ #user-camera {
+    width: 400px;
+    height: 303px;
+    position: static;
+    background-color: #343e67;
+    border-radius: 10px;
+    margin-top: -18px;
+    margin-left: -60px;
+    order: 1;
+    align-self: flex-start;
+ }
+ .row-2 {
+    display: flex;
+    width: 95%;
+ }
+ .column {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+ }
+ 
+ .column:first-child {
+    flex: 1;
+ }
+ 
+ .column:last-child {
+    width: 562px;
+ }
+ 
+ /* New control container for layout */
+ .controls-container {
+    display: flex;
+    width: 100%;
+    gap: 100px;
+    margin-top: 30px;
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding-left: 30px;
+    flex-wrap: wrap;
+    position: relative;
+ }
+ 
+ .controls-circle {
+    position: relative;
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background-color: rgba(45, 55, 85, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 20px rgba(95, 160, 255, 0.4);
+    border: 2px solid #5f9fff;
+ }
+
+ .controls {
+    display: grid;
+    grid-template-columns: repeat(3, 70px);
+    grid-template-rows: repeat(3, 70px);
+    justify-content: center;
+    align-items: center;
+ }
+
+ .empty {
+    background: transparent;
+    box-shadow: none;
+    width: 70px;
+    height: 70px;
+ }
+ 
+ /* Position buttons in the WASD layout */
+ #btn-up {
+    grid-column: 2;
+    grid-row: 1;
+ }
+ 
+ #btn-left {
+    grid-column: 1;
+    grid-row: 2;
+ }
+
+ #ars-img {
+   width: 50px;
+   height: 50px;
+   place-self: center;
+   filter: blur(0.5px);
+   grid-column: 2;
+   grid-row: 2;
+ }
+ 
+ #btn-right {
+    grid-column: 3;
+    grid-row: 2;
+ }
+ 
+ #btn-down {
+    grid-column: 2;
+    grid-row: 3;
+ }
+ 
+ .controls button {
+    width: 70px;
+    height: 70px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 20px;
+    cursor: pointer;
+    border: none;
+    background-color: #5f9fff;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+ }
+ 
+ .controls button:hover {
+    background-color: #8db5ff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+ }
+ 
+ .controls button:active, .controls button.active {
+    background-color: #3168ca;
+    color: white;
+    transform: translateY(3px);
+ }
+
+  /* Driving Mode Selector Styles */
+  .driving-mode {
+   margin-top: -20px;
+   margin-left: -60px;
+   background-color: #232d4a;
+   padding: 25px;
+   border-radius: 12px;
+   border: 2px solid #343e67;
+   width: 100%;
+   max-width: 180px;
+   box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+   position: relative;
+   overflow: hidden;
+}
+
+.driving-mode::before {
+   content: '';
+   position: absolute;
+   top: 0;
+   left: 0;
+   right: 0;
+   height: 10px;
+   background: linear-gradient(90deg, #343e67, #5f9fff, #343e67);
+   border-radius: 5px 5px 0 0;
+}
+
+.driving-mode h3 {
+   color: #8db5ff;
+   margin-top: 0;
+   margin-bottom: 20px;
+   text-align: center;
+   font-size: 1.2em;
+   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+   letter-spacing: 1px;
+}
+
+.mode-selector {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   height: 180px;
+   position: relative;
+   background-color: #1a2138;
+   border-radius: 10px;
+   padding: 15px 0;
+   box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+   width: 90%;
+   margin: 0 auto;
+}
+
+.mode-label {
+   font-weight: bold;
+   padding: 8px 0;
+   width: 100%;
+   text-align: center;
+   transition: all 0.3s ease;
+   position: relative;
+   z-index: 5;
+}
+
+.mode-label::before {
+   content: '';
+   position: absolute;
+   width: 15px;
+   height: 15px;
+   border-radius: 50%;
+   background-color: #333;
+   left: 30%;
+   top: 50%;
+   transform: translateY(-50%);
+   box-shadow: inset 0 0 3px rgba(255,255,255,0.3);
+}
+
+.mode-label.sport {
+   color: #ff7a8e;
+   margin-bottom: 8px;
+   text-shadow: 0 0 8px rgba(255, 122, 142, 0.5);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 5px;
+}
+
+.mode-label.sport::before {
+   background-color: #ff7a8e;
+   box-shadow: 0 0 8px rgba(255, 122, 142, 0.8);
+   position: static;
+   transform: none;
+   display: inline-block;
+   left: auto;
+   margin-right: 5px;
+}
+
+.mode-label.normal {
+   color: #6eebcb;
+   margin-top: 8px;
+   text-shadow: 0 0 8px rgba(110, 235, 203, 0.5);
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 5px;
+}
+
+.mode-label.normal::before {
+   background-color: #6eebcb;
+   box-shadow: 0 0 8px rgba(110, 235, 203, 0.8);
+   position: static;
+   transform: none;
+   display: inline-block;
+   left: auto;
+   margin-right: 5px;
+}
+
+.gear-shifter {
+   position: relative;
+   height: 100px;
+   width: 40px;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+}
+
+.gear-track {
+   position: absolute;
+   width: 12px;
+   height: 100%;
+   background-color: #343e67;
+   border-radius: 6px;
+   box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+   border: 1px solid #5f9fff;
+   overflow: hidden;
+}
+
+.gear-track::before {
+   content: '';
+   position: absolute;
+   top: 0;
+   left: 0;
+   width: 100%;
+   height: 100%;
+   background: repeating-linear-gradient(
+     0deg,
+     rgba(65, 75, 110, 0.5),
+     rgba(65, 75, 110, 0.5) 5px,
+     rgba(85, 95, 140, 0.5) 5px,
+     rgba(85, 95, 140, 0.5) 10px
+   );
+}
+
+.gear-handle {
+   position: absolute;
+   width: 35px;
+   height: 35px;
+   background: linear-gradient(135deg, #3168ca, #5f9fff);
+   border-radius: 50%;
+   box-shadow: 0 0 15px rgba(95, 160, 255, 0.5), 
+               0 3px 8px rgba(0,0,0,0.4),
+               inset 0 1px 3px rgba(255,255,255,0.7);
+   cursor: pointer;
+   z-index: 10;
+   border: 2px solid #3168ca;
+   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.gear-handle::after {
+   content: '';
+   position: absolute;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+   width: 15px;
+   height: 15px;
+   background-color: rgba(255,255,255,0.3);
+   border-radius: 50%;
+   box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
+}
+
+#mode-shift {
+   position: absolute;
+   width: 40px;
+   height: 100px;
+   opacity: 0;
+   cursor: pointer;
+   z-index: 20;
+   -webkit-appearance: none;
+   -moz-appearance: none;
+   appearance: none;
+}
+
+#mode-shift::-webkit-slider-thumb {
+   -webkit-appearance: none;
+   width: 30px;
+   height: 30px;
+   cursor: pointer;
+}
+
+#mode-shift::-moz-range-thumb {
+   width: 30px;
+   height: 30px;
+   cursor: pointer;
+   border: none;
+}
+
+/* Position handle based on value */
+#mode-shift[value="0"] ~ .gear-handle {
+   transform: translateY(-35px);
+   box-shadow: 0 0 20px rgba(255, 122, 142, 0.5), 
+               0 3px 8px rgba(0,0,0,0.4),
+               inset 0 1px 3px rgba(255,255,255,0.7);
+}
+
+#mode-shift[value="1"] ~ .gear-handle {
+   transform: translateY(35px);
+   box-shadow: 0 0 20px rgba(110, 235, 203, 0.5), 
+               0 3px 8px rgba(0,0,0,0.4),
+               inset 0 1px 3px rgba(255,255,255,0.7);
+}
+
+/* Add gear positions markings */
+.mode-selector::after {
+   content: '';
+   position: absolute;
+   left: 50%;
+   transform: translateX(-50%);
+   width: 40px;
+   height: 100%;
+   background-image: 
+     radial-gradient(circle at center, #5f9fff 1px, transparent 2px),
+     radial-gradient(circle at center, #5f9fff 1px, transparent 2px);
+   background-position: center 17%, center 83%;
+   background-repeat: no-repeat;
+   pointer-events: none;
+}
+
+/* Driver Monitor Styles */
+.info-panel {
+   display: flex;
+   flex-direction: column;
+   background-color: #283353;
+   padding: 20px;
+   border-radius: 10px;
+   width: 100%;
+   max-width: 467px;
+   border: 1px solid #5f9fff;
+   box-shadow: 0 0 15px rgba(95, 160, 255, 0.2);
+   margin-bottom: -6px;
+}
+
+.info-item {
+   display: flex;
+   justify-content: space-between;
+   margin: 8px 0;
+   padding: 12px;
+   background-color: #1e263f;
+   border-radius: 8px;
+   border-left: 3px solid #5f9fff;
+   transition: all 0.2s ease;
+}
+
+.info-item span {
+   color: #a9b7d6;
+}
+
+.info-item:hover {
+   transform: translateX(2px);
+   box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.info-label {
+   font-weight: bold;
+   color: #8db5ff;
+   min-width: 100px;
+}
+
+.driver-monitor h3 {
+   color: #ffffff;
+   margin-top: 0;
+   margin-bottom: 15px;
+   text-align: center;
+   font-size: 1.3em;
+   text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+   letter-spacing: 1px;
+   border-bottom: 2px solid #5f9fff;
+   padding-bottom: 10px;
+}
+
+#left-eye-status.open, #right-eye-status.open {
+   color: #7bffda;
+   font-weight: bold;
+}
+
+#left-eye-status.closed, #right-eye-status.closed {
+   color: #ff8fa0;
+   font-weight: bold;
+}
+
+#mouth-status.open {
+   color: #7bffda;
+   font-weight: bold;
+}
+
+.alert-item {
+   margin-top: 15px;
+   font-weight: bold;
+   background-color: #232d4a;
+   border-left: 3px solid #ff7a8e;
+}
+
+#drowsiness-alert {
+   color: #7bffda;
+   font-weight: bold;
+   font-size: 1.1em;
+}
+
+#drowsiness-alert.alert {
+   color: #ff8fa0;
+   animation: alertBlink 1s infinite;
+   font-size: 1.2em;
+   text-shadow: 0 0 10px rgba(255, 143, 160, 0.5);
+}
+
+@keyframes alertBlink {
+   0% { opacity: 1; }
+   50% { opacity: 0.7; }
+   100% { opacity: 1; }
+}

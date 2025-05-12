@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Giao diện điều khiển xe</title>
+   <link rel="stylesheet" href="style.css">
+   <script src="script.js"></script>
+</head>
+<body>
+   <div class="container-frame">
+      <div class="row">
+         <div id="car-camera">Hình ảnh từ camera xe</div>
+      </div>
+
+      <div class="row-2">
+         <div class="column">
+            <div class="controls-container">
+               <div class="controls-circle">
+                  <div class="controls">
+                     <button id="btn-up">▲</button>
+                     <button id="btn-left">◄</button>
+                     <img id="ars-img" src="arrows.png" alt="arrows" />
+                     <button id="btn-right">►</button>
+                     <button id="btn-down">▼</button>
+                  </div>
+               </div>
+               
+               <!-- Driving Mode Selector -->
+               <div class="driving-mode">
+                  <h3>Chế độ lái</h3>
+                  <div class="mode-selector">
+                     <span class="mode-label sport">Thể thao</span>
+                     <div class="gear-shifter">
+                        <input type="range" id="mode-shift" min="0" max="1" value="1" step="1">
+                        <div class="gear-track"></div>
+                        <div class="gear-handle"></div>
+                     </div>
+                     <span class="mode-label normal">Bình thường</span>
+                  </div>
+               </div>
+               
+               <video id="user-camera" autoplay></video>
+            </div>
+         </div>
+         <div class="column">
+            <div class="info-panel">
+               <!-- Driver Monitor Status Section -->
+               <div class="driver-monitor">
+                  <h3>Trạng thái tài xế</h3>
+                  <div class="info-item">
+                     <span class="info-label">Mắt trái:</span>
+                     <span id="left-eye-status">Không có thông tin</span>
+                  </div>
+                  <div class="info-item">
+                     <span class="info-label">Mắt phải:</span>
+                     <span id="right-eye-status">Không có thông tin</span>
+                  </div>
+                  <div class="info-item">
+                     <span class="info-label">Miệng:</span>
+                     <span id="mouth-status">Không có thông tin</span>
+                  </div>
+                  <div class="info-item alert-item">
+                     <span class="info-label">Trạng thái:</span>
+                     <span id="drowsiness-alert">Không có thông tin</span>
+                  </div>
+               </div>
+            </div>   
+         </div>
+      </div>
+   </div>
+</body>
+</html>
