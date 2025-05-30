@@ -3,25 +3,25 @@
 #include <ESPAsyncWebServer.h>
 
 // Hardware Configuration - CORRECTED GPIOs
-#define MOTOR_LEFT        18
-#define MOTOR_RIGHT       19
-#define MOTOR_BACKWARD    16
-#define MOTOR_FORWARD     17
-#define ENA_PIN           25  
-#define ENB_PIN           32
+#define MOTOR_LEFT        16
+#define MOTOR_RIGHT       17
+#define MOTOR_BACKWARD    19
+#define MOTOR_FORWARD     18
+#define ENA_PIN           26  
+#define ENB_PIN           25
 #define WS_AUTH_TOKEN     "SECURE_TOKEN_123"
 #define MOTOR_TIMEOUT     1000  // ms
 
 // Motor speed settings
-#define DEFAULT_ENA_SPEED 100
-#define SPORT_ENA_SPEED   150
-#define DEFAULT_ENB_SPEED 50
+#define DEFAULT_ENA_SPEED 150
+#define SPORT_ENA_SPEED   200
+#define DEFAULT_ENB_SPEED 80
 
 // AP credentials
 #define AP_SSID "ESP32_AP"
 #define AP_PASSWORD "12345678"
 
-#define STEERING_PULSE_MS 1000  // 1 second pulse duration
+#define STEERING_PULSE_MS 100  
 
 // Motor control variables
 int enaSpeed = DEFAULT_ENA_SPEED;
@@ -102,29 +102,22 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String message) {
     }
   }
   else if (command.startsWith("Pressed: ")) {
-    String btn = command.substring(9);
-    if (btn == "btn-up" && !motorForward) {
-      motorForward = true;
-      controlMotor(MOTOR_FORWARD, true, true);
-    } else if (btn == "btn-down" && !motorBackward) {
-      motorBackward = true;
-      controlMotor(MOTOR_BACKWARD, true, true);
-    } else if (btn == "btn-left" && !motorLeft) {
-      motorLeft = true;
-      // Start the left steering pulse
-      controlMotor(MOTOR_LEFT, true, false);
-      activePulsePin = MOTOR_LEFT;
-      steeringPulseActive = true;
-      steeringPulseEndTime = millis() + STEERING_PULSE_MS;
-    } else if (btn == "btn-right" && !motorRight) {
-      motorRight = true;
-      // Start the right steering pulse
-      controlMotor(MOTOR_RIGHT, true, false);
-      activePulsePin = MOTOR_RIGHT;
-      steeringPulseActive = true;
-      steeringPulseEndTime = millis() + STEERING_PULSE_MS;
-    }
+  String btn = command.substring(9);
+  if (btn == "btn-up" && !motorForward) {
+    motorForward = true;
+    controlMotor(MOTOR_FORWARD, true, true);
+  } else if (btn == "btn-down" && !motorBackward) {
+    motorBackward = true;
+    controlMotor(MOTOR_BACKWARD, true, true);
+  } else if ((btn == "btn-left" || btn == "btn-right") && !steeringPulseActive) {
+    int pin = (btn == "btn-left") ? MOTOR_LEFT : MOTOR_RIGHT;
+    Serial.println(btn);
+    controlMotor(pin, true, false);
+    activePulsePin = pin;
+    steeringPulseActive = true;
+    steeringPulseEndTime = millis() + STEERING_PULSE_MS;
   }
+}
   else if (command.startsWith("Released: ")) {
     String btn = command.substring(10);
     if (btn == "btn-up") {
@@ -133,20 +126,6 @@ void handleWebSocketMessage(AsyncWebSocketClient *client, String message) {
     } else if (btn == "btn-down") {
       motorBackward = false;
       controlMotor(MOTOR_BACKWARD, false, true);
-    } else if (btn == "btn-left") {
-      motorLeft = false;
-      // Start the right correction pulse
-      controlMotor(MOTOR_RIGHT, true, false);
-      activePulsePin = MOTOR_RIGHT;
-      steeringPulseActive = true;
-      steeringPulseEndTime = millis() + STEERING_PULSE_MS;
-    } else if (btn == "btn-right") {
-      motorRight = false;
-      // Start the left correction pulse
-      controlMotor(MOTOR_LEFT, true, false);
-      activePulsePin = MOTOR_LEFT;
-      steeringPulseActive = true;
-      steeringPulseEndTime = millis() + STEERING_PULSE_MS;
     }
   }
 }
