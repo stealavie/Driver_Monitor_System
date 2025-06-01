@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', (event) => {
     let websocket;
-    const PYTHON_SERVER_URL = 'http://localhost:5000/process_frame';
+    const PYTHON_SERVER_URL = 'http://localhost:5000/process';
     let processingActive = true;
     let frameCount = 0;
     let fpsUpdateInterval = null;
@@ -123,16 +123,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
         canvas.width = video.videoWidth || 320;
         canvas.height = video.videoHeight || 240;
 
-        // Initialize FPS counter
-        initFPSCounter();
-
         // Process frames at regular intervals
         const faceMonitorInterval = setInterval(() => {
             if (!processingActive) return;
 
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageData = canvas.toDataURL('image/jpeg', 0.9);
-            frameCount++;
 
             // Send the frame to the Python server for processing
             fetch(PYTHON_SERVER_URL, {
@@ -155,7 +151,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         // Cleanup function
         return () => {
             clearInterval(faceMonitorInterval);
-            clearInterval(fpsUpdateInterval);
         };
     }
 
@@ -168,31 +163,31 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const drowsinessAlert = document.getElementById('drowsiness-alert');
 
         // Update eye and mouth status
-        leftEyeStatus.textContent = data.left_eye_state;
-        leftEyeStatus.className = data.left_eye_state.toLowerCase();
+        leftEyeStatus.textContent = data.left_eye;
+        // leftEyeStatus.className = data.left_eye.toLowerCase();
 
-        rightEyeStatus.textContent = data.right_eye_state;
-        rightEyeStatus.className = data.right_eye_state.toLowerCase();
+        rightEyeStatus.textContent = data.right_eye;
+        // rightEyeStatus.className = data.right_eye.toLowerCase();
 
-        mouthStatus.textContent = data.mouth_state;
-        mouthStatus.className = data.mouth_state.toLowerCase();
+        mouthStatus.textContent = data.mouth;
+        // mouthStatus.className = data.mouth.toLowerCase();
 
-        // Handle drowsiness alerts
-        if (data.drowsy) {
-            drowsinessAlertCount++;
+        // // Handle drowsiness alerts
+        // if (data.drowsy) {
+        //     drowsinessAlertCount++;
             
-            if (drowsinessAlertCount >= drowsyThreshold) {
-                drowsinessAlert.textContent = "Cảnh báo có dấu hiệu buồn ngủ!";
-                drowsinessAlert.className = "alert";
+        //     if (drowsinessAlertCount >= drowsyThreshold) {
+        //         drowsinessAlert.textContent = "Cảnh báo có dấu hiệu buồn ngủ!";
+        //         drowsinessAlert.className = "alert";
                 
-                // Send alert to ESP32
-                sendCommand("alert-drowsy");
-            }
-        } else {
-            drowsinessAlertCount = 0;
-            drowsinessAlert.textContent = "Tài xế tỉnh táo";
-            drowsinessAlert.className = "";
-        }
+        //         // Send alert to ESP32
+        //         sendCommand("alert-drowsy");
+        //     }
+        // } else {
+        //     drowsinessAlertCount = 0;
+        //     drowsinessAlert.textContent = "Tài xế tỉnh táo";
+        //     drowsinessAlert.className = "";
+        // }
     }
 
     // Initialize WebSocket connection
