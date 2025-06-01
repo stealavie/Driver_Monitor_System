@@ -1,14 +1,40 @@
 document.addEventListener('DOMContentLoaded', (event) => {
     let websocket;
-    const PYTHON_SERVER_URL = 'http://localhost:5000/process_frame';
+    const PYTHON_SERVER_URL = 'http://localhost:5000/process';
     let processingActive = true;
-    let lastFrameTime = 0;
-    let frameCount = 0;
-    let fpsUpdateInterval = null;
     let drowsinessAlertCount = 0;
     let drowsyThreshold = 3; // Number of consecutive drowsy frames to trigger alert
     let wsConnected = false; // Track connection status
     let currentDrivingMode = 'normal'; // Default driving mode
+
+    // Help modal functionality
+    const helpButton = document.getElementById('help-button');
+    const helpModal = document.getElementById('help-modal');
+    const closeModal = document.getElementById('close-modal');
+
+    // Show modal when help button is clicked
+    helpButton.addEventListener('click', () => {
+        helpModal.classList.add('show');
+    });
+
+    // Close modal when close button is clicked
+    closeModal.addEventListener('click', () => {
+        helpModal.classList.remove('show');
+    });
+
+    // Close modal when clicking outside modal content
+    window.addEventListener('click', (event) => {
+        if (event.target === helpModal) {
+            helpModal.classList.remove('show');
+        }
+    });
+
+    // Close modal with Escape key
+    window.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && helpModal.classList.contains('show')) {
+            helpModal.classList.remove('show');
+        }
+    });
 
     // Properly declared function with connection state check
     const sendCommand = (command) => {
@@ -127,20 +153,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         };
     }
 
-    // Initialize the FPS counter
-    function initFPSCounter() {
-        fpsUpdateInterval = setInterval(() => {
-            const now = performance.now();
-            const elapsed = now - lastFrameTime;
-            if (elapsed > 0) {
-                const fps = Math.round((frameCount * 1000) / elapsed);
-                document.getElementById('fps-counter').textContent = fps;
-                lastFrameTime = now;
-                frameCount = 0;
-            }
-        }, 1000);
-    }
-
     // Initialize face monitoring
     function initFaceMonitoring() {
         const video = document.getElementById('user-camera');
@@ -149,16 +161,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
         canvas.width = video.videoWidth || 320;
         canvas.height = video.videoHeight || 240;
 
-        // Initialize FPS counter
-        initFPSCounter();
-
         // Process frames at regular intervals
         const faceMonitorInterval = setInterval(() => {
             if (!processingActive) return;
 
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             const imageData = canvas.toDataURL('image/jpeg', 0.9);
-            frameCount++;
 
             // Send the frame to the Python server for processing
             fetch(PYTHON_SERVER_URL, {
@@ -181,7 +189,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         // Cleanup function
         return () => {
             clearInterval(faceMonitorInterval);
-            clearInterval(fpsUpdateInterval);
         };
     }
 
@@ -195,30 +202,30 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         // Update eye and mouth status
         leftEyeStatus.textContent = data.left_eye_state;
-        leftEyeStatus.className = data.left_eye_state.toLowerCase();
+        // leftEyeStatus.className = data.left_eye_state.toLowerCase();
 
         rightEyeStatus.textContent = data.right_eye_state;
-        rightEyeStatus.className = data.right_eye_state.toLowerCase();
+        // rightEyeStatus.className = data.right_eye_state.toLowerCase();
 
         mouthStatus.textContent = data.mouth_state;
-        mouthStatus.className = data.mouth_state.toLowerCase();
+        // mouthStatus.className = data.mouth_state.toLowerCase();
 
         // Handle drowsiness alerts
-        if (data.drowsy) {
-            drowsinessAlertCount++;
+        // if (data.drowsy) {
+        //     drowsinessAlertCount++;
             
-            if (drowsinessAlertCount >= drowsyThreshold) {
-                drowsinessAlert.textContent = "Cảnh báo có dấu hiệu buồn ngủ!";
-                drowsinessAlert.className = "alert";
+        //     if (drowsinessAlertCount >= drowsyThreshold) {
+        //         drowsinessAlert.textContent = "Cảnh báo có dấu hiệu buồn ngủ!";
+        //         drowsinessAlert.className = "alert";
                 
-                // Send alert to ESP32
-                sendCommand("alert-drowsy");
-            }
-        } else {
-            drowsinessAlertCount = 0;
-            drowsinessAlert.textContent = "Tài xế tỉnh táo";
-            drowsinessAlert.className = "";
-        }
+        //         // Send alert to ESP32
+        //         sendCommand("alert-drowsy");
+        //     }
+        // } else {
+        //     drowsinessAlertCount = 0;
+        //     drowsinessAlert.textContent = "Tài xế tỉnh táo";
+        //     drowsinessAlert.className = "";
+        // }
     }
 
     // Initialize WebSocket connection
