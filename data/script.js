@@ -7,48 +7,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     let wsConnected = false; // Track connection status
     let currentDrivingMode = 'normal'; // Default driving mode
 
-    // Drowsiness detection variables
-    let eyesClosedStartTime = null;
-    let eyesClosedDuration = 0;
-    let blinkStartTime = null;
-    let blinkDuration = 0;
-    let consecutiveBlinkCount = 0;
-    let mouthOpenStartTime = null;
-    let mouthOpenDuration = 0;
-    let mouthDisappearStartTime = null;
-    let mouthDisappearDuration = 0;
-    let lastEyeState = { left: 'open', right: 'open' };
-    let lastMouthState = 'closed';
-    let alarmAudio = null;
-    let alarmActive = false;
-
-    // Initialize alarm audio
-    function initAlarm() {
-        alarmAudio = new Audio('static/alarm.wav');
-        alarmAudio.loop = true;
-        alarmAudio.volume = 0.8;
-    }
-
-    // Play alarm
-    function playAlarm() {
-        if (!alarmActive && alarmAudio) {
-            alarmActive = true;
-            alarmAudio.play().catch(e => console.error('Alarm play error:', e));
-        }
-    }
-
-    // Stop alarm
-    function stopAlarm() {
-        if (alarmActive && alarmAudio) {
-            alarmActive = false;
-            alarmAudio.pause();
-            alarmAudio.currentTime = 0;
-        }
-    }
-
-    // Initialize alarm on page load
-    initAlarm();
-
     // Help modal functionality
     const helpButton = document.getElementById('help-button');
     const helpModal = document.getElementById('help-modal');
@@ -232,7 +190,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         return () => {
             clearInterval(faceMonitorInterval);
         };
-    }    // Update UI with drowsiness detection results
+    }
+
+    // Update UI with drowsiness detection results
     function updateDriverStatus(data) {
         // Get DOM elements
         const leftEyeStatus = document.getElementById('left-eye-status');
@@ -240,124 +200,32 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const mouthStatus = document.getElementById('mouth-status');
         const drowsinessAlert = document.getElementById('drowsiness-alert');
 
-        // Update eye and mouth status display
+        // Update eye and mouth status
         leftEyeStatus.textContent = data.left_eye_state;
+        // leftEyeStatus.className = data.left_eye_state.toLowerCase();
+
         rightEyeStatus.textContent = data.right_eye_state;
+        // rightEyeStatus.className = data.right_eye_state.toLowerCase();
+
         mouthStatus.textContent = data.mouth_state;
+        // mouthStatus.className = data.mouth_state.toLowerCase();
 
-        const currentTime = Date.now();
-        const frameInterval = 150; // ms between frames
-        let alarmTriggered = false;
-
-        // Check eye closure conditions
-        const bothEyesClosed = data.left_eye_state === 'closed' && data.right_eye_state === 'closed';
-        const anyEyeClosed = data.left_eye_state === 'closed' || data.right_eye_state === 'closed';
-
-        // Track eyes closed for 3+ seconds
-        if (bothEyesClosed) {
-            if (eyesClosedStartTime === null) {
-                eyesClosedStartTime = currentTime;
-            }
-            eyesClosedDuration = currentTime - eyesClosedStartTime;
+        // Handle drowsiness alerts
+        // if (data.drowsy) {
+        //     drowsinessAlertCount++;
             
-            if (eyesClosedDuration >= 3000) { // 3 seconds
-                alarmTriggered = true;
-                console.log("Alarm: Eyes closed for 3+ seconds");
-            }
-        } else {
-            eyesClosedStartTime = null;
-            eyesClosedDuration = 0;
-        }
-
-        // Track continuous blinking for 10+ seconds
-        const eyeStateChanged = (data.left_eye_state !== lastEyeState.left) || 
-                               (data.right_eye_state !== lastEyeState.right);
-        
-        if (eyeStateChanged && anyEyeClosed) {
-            consecutiveBlinkCount++;
-            if (blinkStartTime === null) {
-                blinkStartTime = currentTime;
-            }
-            blinkDuration = currentTime - blinkStartTime;
-            
-            // If blinking continuously for 10+ seconds
-            if (blinkDuration >= 10000 && consecutiveBlinkCount >= 10) { // 10 seconds with many blinks
-                alarmTriggered = true;
-                console.log("Alarm: Continuous blinking for 10+ seconds");
-            }
-        } else if (!anyEyeClosed && eyeStateChanged) {
-            // Reset blink tracking if eyes are fully open and state changed
-            if (blinkDuration < 10000) {
-                blinkStartTime = null;
-                blinkDuration = 0;
-                consecutiveBlinkCount = 0;
-            }
-        }
-
-        // Track mouth open for 3+ seconds
-        if (data.mouth_state === 'open') {
-            if (mouthOpenStartTime === null) {
-                mouthOpenStartTime = currentTime;
-            }
-            mouthOpenDuration = currentTime - mouthOpenStartTime;
-            
-            if (mouthOpenDuration >= 3000) { // 3 seconds
-                alarmTriggered = true;
-                console.log("Alarm: Mouth open for 3+ seconds");
-            }
-        } else {
-            mouthOpenStartTime = null;
-            mouthOpenDuration = 0;
-        }
-
-        // Track mouth disappear (no detection) for 3+ seconds
-        if (data.mouth_state === 'Không có thông tin') {
-            if (mouthDisappearStartTime === null) {
-                mouthDisappearStartTime = currentTime;
-            }
-            mouthDisappearDuration = currentTime - mouthDisappearStartTime;
-            
-            if (mouthDisappearDuration >= 3000) { // 3 seconds
-                alarmTriggered = true;
-                console.log("Alarm: Mouth disappeared for 3+ seconds");
-            }
-        } else {
-            mouthDisappearStartTime = null;
-            mouthDisappearDuration = 0;
-        }
-
-        // Handle alarm state
-        if (alarmTriggered) {
-            drowsinessAlert.textContent = "CẢNH BÁO! Phát hiện dấu hiệu buồn ngủ!";
-            drowsinessAlert.className = "alert";
-            playAlarm();
-            
-            // Send alert to ESP32
-            sendCommand("alert-drowsy");
-        } else {
-            drowsinessAlert.textContent = "Tài xế tỉnh táo";
-            drowsinessAlert.className = "";
-            stopAlarm();
-        }
-
-        // Update last states for comparison
-        lastEyeState.left = data.left_eye_state;
-        lastEyeState.right = data.right_eye_state;
-        lastMouthState = data.mouth_state;
-
-        // Debug information
-        if (eyesClosedDuration > 0) {
-            console.log(`Eyes closed duration: ${eyesClosedDuration}ms`);
-        }
-        if (blinkDuration > 0) {
-            console.log(`Blink duration: ${blinkDuration}ms, count: ${consecutiveBlinkCount}`);
-        }
-        if (mouthOpenDuration > 0) {
-            console.log(`Mouth open duration: ${mouthOpenDuration}ms`);
-        }
-        if (mouthDisappearDuration > 0) {
-            console.log(`Mouth disappear duration: ${mouthDisappearDuration}ms`);
-        }
+        //     if (drowsinessAlertCount >= drowsyThreshold) {
+        //         drowsinessAlert.textContent = "Cảnh báo có dấu hiệu buồn ngủ!";
+        //         drowsinessAlert.className = "alert";
+                
+        //         // Send alert to ESP32
+        //         sendCommand("alert-drowsy");
+        //     }
+        // } else {
+        //     drowsinessAlertCount = 0;
+        //     drowsinessAlert.textContent = "Tài xế tỉnh táo";
+        //     drowsinessAlert.className = "";
+        // }
     }
 
     // Initialize WebSocket connection
