@@ -36,8 +36,8 @@
 // ===========================
 // Enter your WiFi credentials
 // ===========================
-const char *ssid = "simp BH";
-const char *password = "BaoHanlaso1";
+const char *ssid = "YOUR_WIFI_SSID"; // Replace with your network SSID (name)
+const char *password = "YOUR_WIFI_PASSWORD"; // Replace with your network password
 
 void startCameraServer();
 void setupLedFlash(int pin);
@@ -111,6 +111,7 @@ void setup() {
   // initial sensors are flipped vertically and colors are a bit saturated
   if (s->id.PID == OV3660_PID) {
     s->set_vflip(s, 1);        // flip it back
+    s->set_hmirror(s, 1); // Mirror horizontally
     s->set_brightness(s, 1);   // up the brightness just a bit
     s->set_saturation(s, -2);  // lower the saturation
   }
