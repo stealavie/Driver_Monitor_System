@@ -50,8 +50,11 @@ def main():
         if not ret:
             break
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        faces = detector(gray, 0)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        rgb = np.ascontiguousarray(rgb, dtype=np.uint8)
+        print("dtype:", rgb.dtype, "shape:", rgb.shape)
+
+        faces = detector(rgb, 0)
 
         # Default statuses
         left_status = "Left Eye: N/A"
@@ -59,7 +62,7 @@ def main():
         mouth_status = "Mouth: N/A"
 
         for face in faces:
-            shape = predictor(gray, face)
+            shape = predictor(rgb, face)
             pts = shape_to_np(shape)
 
             # Eyes

@@ -4,70 +4,169 @@
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>Giao diện điều khiển xe</title>
-   <link rel="stylesheet" href="/static/style.css">
-   <script src="/static/script.js"></script>
+   <link rel="stylesheet" href="static/style.css">
+   <script src="static/script.js"></script>
 </head>
 <body>
-   <div class="row">
-      <img id="car-camera" src="http://192.168.112.92:81/stream" alt="Hình ảnh từ camera xe">
-      <video id="user-camera" autoplay></video>
-   </div>
-
-   <div class="row-2">
-      <div class="column">
-         <div class="controls">
-            <div class="row">
-               <button id="btn-up">▲</button>
-            </div>
-            <div class="row">
-               <button id="btn-left">◄</button>
-               <button id="btn-down">▼</button>
-               <button id="btn-right">►</button>
-            </div>
+   <!-- Help Button -->
+   <button id="help-button" class="help-button">?</button>
+   
+   <!-- Help Modal -->
+   <div id="help-modal" class="modal">
+      <div class="modal-content">
+         <button id="close-modal" class="close-button">&times;</button>
+         
+         <h2>HƯỚNG DẪN SỬ DỤNG GIAO DIỆN ĐIỀU KHIỂN XE</h2>
+         
+         <div class="modal-section">
+            <h3>TỔNG QUAN</h3>
+            <p>Giao diện điều khiển xe được thiết kế để điều khiển phương tiện từ xa, đồng thời giám sát trạng thái tài xế để đảm bảo an toàn khi lái xe.</p>
          </div>
-         <!-- Driving Mode Selector -->
-         <div class="driving-mode">
-            <h3>Chế độ lái</h3>
-            <div class="mode-selector">
-               <div class="mode-option">
-                  <input type="radio" id="mode-normal" name="driving-mode" value="normal" checked>
-                  <label for="mode-normal">Bình thường</label>
-               </div>
-               <div class="mode-option">
-                  <input type="radio" id="mode-sport" name="driving-mode" value="sport">
-                  <label for="mode-sport">Thể thao</label>
-               </div>
-            </div>
+         
+         <div class="modal-section">
+            <h3>CÁC THÀNH PHẦN CHÍNH</h3>
+            
+            <h4>1. MÀN HÌNH HIỂN THỊ</h4>
+            <ul>
+               <li>Khung hình ảnh camera xe: Hiển thị hình ảnh từ camera gắn trên xe</li>
+               <li>Camera người dùng: Hiển thị hình ảnh từ webcam để giám sát tài xế</li>
+            </ul>
+            
+            <h4>2. ĐIỀU KHIỂN XE</h4>
+            <ul>
+               <li>Các phím điều hướng:</li>
+               <li>Sử dụng các nút mũi tên (▲ ◄ ► ▼) hoặc các phím W, A, S, D trên bàn phím</li>
+               <li>Mũi tên lên (W): Di chuyển tiến</li>
+               <li>Mũi tên xuống (S): Di chuyển lùi</li>
+               <li>Mũi tên trái (A): Rẽ trái</li>
+               <li>Mũi tên phải (D): Rẽ phải</li>
+            </ul>
+            
+            <h4>3. CHẾ ĐỘ LÁI</h4>
+            <ul>
+               <li>Chuyển đổi chế độ lái bằng cách:</li>
+               <li>Kéo thanh trượt lên/xuống giữa hai chế độ</li>
+               <li>Hoặc nhấn phím C để chuyển đổi nhanh</li>
+               <li>Chế độ bình thường (mặc định): Phù hợp cho lái xe thông thường</li>
+               <li>Chế độ thể thao: Cung cấp khả năng phản hồi nhanh hơn</li>
+            </ul>
+            
+            <h4>4. HỆ THỐNG GIÁM SÁT TÀI XẾ</h4>
+            <ul>
+               <li>Thông tin trạng thái:</li>
+               <li>Mắt trái: Mở/Đóng</li>
+               <li>Mắt phải: Mở/Đóng</li>
+               <li>Miệng: Mở/Đóng</li>
+               <li>Cảnh báo buồn ngủ:</li>
+               <li>Hiển thị "Tài xế tỉnh táo" khi bình thường</li>
+               <li>Hiển thị "Cảnh báo có dấu hiệu buồn ngủ!" khi phát hiện dấu hiệu buồn ngủ</li>
+               <li>Cảnh báo nhấp nháy màu đỏ khi tài xế có dấu hiệu buồn ngủ liên tục</li>
+            </ul>
+         </div>
+         
+         <div class="modal-section">
+            <h3>CÁCH SỬ DỤNG</h3>
+            
+            <h4>1. Khởi động hệ thống:</h4>
+            <ul>
+               <li>Cho phép truy cập camera khi được yêu cầu</li>
+               <li>Hệ thống sẽ tự động kết nối với xe qua WebSocket</li>
+            </ul>
+            
+            <h4>2. Điều khiển xe:</h4>
+            <ul>
+               <li>Sử dụng các phím điều hướng hoặc nút trên giao diện</li>
+               <li>Các phím W, A, S, D hoặc mũi tên trên bàn phím để điều khiển chuyển động</li>
+            </ul>
+            
+            <h4>3. Chuyển đổi chế độ lái:</h4>
+            <ul>
+               <li>Nhấn phím C để chuyển đổi giữa hai chế độ</li>
+               <li>Thanh trượt lên để chọn chế độ thể thao</li>
+               <li>Thanh trượt xuống để chọn chế độ bình thường</li>
+            </ul>
+            
+            <h4>4. Giám sát trạng thái tài xế:</h4>
+            <ul>
+               <li>Quan sát trạng thái mắt và miệng được hiển thị bên phải</li>
+               <li>Chú ý đến cảnh báo khi hệ thống phát hiện dấu hiệu buồn ngủ</li>
+            </ul>
+         </div>
+         
+         <div class="modal-section">
+            <h3>LƯU Ý</h3>
+            <ul>
+               <li>Đảm bảo camera người dùng được bật và hoạt động chính xác</li>
+               <li>Cảnh báo buồn ngủ sẽ xuất hiện khi hệ thống phát hiện mắt nhắm liên tục</li>
+               <li>Kết nối WebSocket với xe cần được thiết lập trước khi điều khiển</li>
+            </ul>
          </div>
       </div>
-      <div class="column">
-         <div class="info-panel">
+   </div>
 
-            <!-- Driver Monitor Status Section -->
-            <div class="driver-monitor">
-               <h3>Trạng thái tài xế</h3>
-               <div class="info-item">
-                  <span class="info-label">Mắt trái:</span>
-                  <span id="left-eye-status">Không có thông tin</span>
+   <div class="container-frame">
+      <div class="row">
+         <!-- <div id="car-camera">Hình ảnh từ camera xe</div> -->
+         <img id="car-camera" src="http://192.168.112.92:81/stream" alt="Hình ảnh từ camera xe">
+      </div>
+
+      <div class="row-2">
+         <div class="column">
+            <div class="controls-container">
+               <div class="controls-circle">
+                  <div class="controls">
+                     <button id="btn-up">▲</button>
+                     <button id="btn-left">◄</button>
+                     <img id="ars-img" src="arrows.png" alt="arrows" />
+                     <button id="btn-right">►</button>
+                     <button id="btn-down">▼</button>
+                  </div>
                </div>
-               <div class="info-item">
-                  <span class="info-label">Mắt phải:</span>
-                  <span id="right-eye-status">Không có thông tin</span>
+               
+               <!-- Driving Mode Selector -->
+               <div class="driving-mode">
+                  <h3>Chế độ lái</h3>
+                  <div class="mode-selector">
+                     <span class="mode-label sport">Thể thao</span>
+                     <div class="gear-shifter">
+                        <input type="range" id="mode-shift" min="0" max="1" value="1" step="1">
+                        <div class="gear-track"></div>
+                        <div class="gear-handle"></div>
+                     </div>
+                     <span class="mode-label normal">Bình thường</span>
+                  </div>
                </div>
-               <div class="info-item">
-                  <span class="info-label">Miệng:</span>
-                  <span id="mouth-status">Không có thông tin</span>
-               </div>
-               <div class="info-item alert-item">
-                  <span class="info-label">Trạng thái:</span>
-                  <span id="drowsiness-alert">Không có thông tin</span>
-               </div>
+               
+               <video id="user-camera" autoplay></video>
+               <!-- Hidden canvas for image processing -->
+               <canvas id="processing-canvas" style="display: none;"></canvas>
             </div>
+         </div>
+         <div class="column">
+            <div class="info-panel">
+               <!-- Driver Monitor Status Section -->
+               <div class="driver-monitor">
+                  <h3>Trạng thái tài xế</h3>
+                  <div class="info-item">
+                     <span class="info-label">Mắt trái:</span>
+                     <span id="left-eye-status">Không có thông tin</span>
+                  </div>
+                  <div class="info-item">
+                     <span class="info-label">Mắt phải:</span>
+                     <span id="right-eye-status">Không có thông tin</span>
+                  </div>
+                  <div class="info-item">
+                     <span class="info-label">Miệng:</span>
+                     <span id="mouth-status">Không có thông tin</span>
+                  </div>
+                  <div class="info-item alert-item">
+                     <span class="info-label">Trạng thái:</span>
+                     <span id="drowsiness-alert">Không có thông tin</span>
+                  </div>
+               </div>
+            </div>   
          </div>
       </div>
    </div>
-
-   <!-- Hidden canvas for image processing -->
-   <canvas id="processing-canvas" style="display:none;"></canvas>
 </body>
 </html>
