@@ -314,6 +314,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             drowsinessAlert.textContent = "CẢNH BÁO! Phát hiện dấu hiệu buồn ngủ!";
             drowsinessAlert.className = "alert";
             playAlarm();
+            document.body.classList.add('warning-active');
 
             // Send alert to ESP32
             sendCommand("alert-drowsy");
@@ -321,6 +322,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             drowsinessAlert.textContent = "Tài xế tỉnh táo";
             drowsinessAlert.className = "";
             stopAlarm();
+            document.body.classList.remove('warning-active');
         }
 
         // Update last states for comparison
