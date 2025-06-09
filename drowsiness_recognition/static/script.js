@@ -1,105 +1,20 @@
-// Global variables
-let websocket;
-const PYTHON_SERVER_URL = 'http://localhost:5000/process';
-let processingActive = true;
-let wsConnected = false; // Track connection status
-let currentDrivingMode = 'normal'; // Default driving mode
-
-// Drowsiness detection variables
-let eyesClosedStartTime = null;
-let eyesClosedDuration = 0;
-let mouthOpenStartTime = null;
-let mouthOpenDuration = 0;
-let mouthDisappearStartTime = null;
-let mouthDisappearDuration = 0;
-let lastEyeState = { left: 'open', right: 'open' };
-let alarmAudio = null;
-let alarmActive = false;
-
-// Latency measurement variables
-let latencyMeasurements = [];
-let currentLatency = 0;
-let averageLatency = 0;
-let maxLatency = 0;
-let commandTimestamps = new Map(); // Track command send times
-let latencyDisplayEnabled = true;
-
-// Global functions for latency measurement
-function calculateLatency(startTime) {
-    const endTime = performance.now();
-    const latency = endTime - startTime;
-    
-    // Store latency measurement
-    latencyMeasurements.push(latency);
-    
-    // Keep only last 100 measurements for performance
-    if (latencyMeasurements.length > 100) {
-        latencyMeasurements.shift();
-    }
-    
-    // Update latency statistics
-    currentLatency = latency;
-    averageLatency = latencyMeasurements.reduce((sum, val) => sum + val, 0) / latencyMeasurements.length;
-    maxLatency = Math.max(maxLatency, latency);
-    
-    // Update UI display
-    updateLatencyDisplay();
-    
-    console.log(`Command latency: ${latency.toFixed(2)}ms (avg: ${averageLatency.toFixed(2)}ms)`);
-    
-    return latency;
-}
-
-function updateLatencyDisplay() {
-    const latencyElement = document.getElementById('latency-display');
-    if (latencyElement && latencyDisplayEnabled) {
-        latencyElement.innerHTML = `
-            <div class="latency-stats">
-                <span>Current: ${currentLatency.toFixed(1)}ms</span>
-                <span>Average: ${averageLatency.toFixed(1)}ms</span>
-                <span>Max: ${maxLatency.toFixed(1)}ms</span>
-            </div>
-        `;
-    }
-}
-
-function resetLatencyStats() {
-    latencyMeasurements = [];
-    currentLatency = 0;
-    averageLatency = 0;
-    maxLatency = 0;
-    updateLatencyDisplay();
-    console.log('Latency statistics reset');
-}
-
-function getLatencyStats() {
-    return {
-        current: currentLatency,
-        average: averageLatency,
-        max: maxLatency,
-        count: latencyMeasurements.length,
-        measurements: [...latencyMeasurements]
-    };
-}
-
-// Global function for button onclick handlers
-function sendPingCommand() {
-    if (websocket && websocket.readyState === WebSocket.OPEN) {
-        const startTime = performance.now();
-        const pingId = `ping_${Date.now()}`;
-        
-        commandTimestamps.set(pingId, startTime);
-        
-        // Send ping command
-        websocket.send(`SECURE_TOKEN_123-ping:${pingId}`);
-        
-        console.log("Ping sent:", pingId);
-    } else {
-        console.error("WebSocket not connected. Cannot send ping.");
-    }
-}
-
 document.addEventListener('DOMContentLoaded', (event) => {
+    let websocket;
+    const PYTHON_SERVER_URL = 'http://localhost:5000/process';
+    let processingActive = true;
+    let wsConnected = false; // Track connection status
+    let currentDrivingMode = 'normal'; // Default driving mode
+
+    // Drowsiness detection variables
+    let eyesClosedStartTime = null;
+    let eyesClosedDuration = 0;
+    let mouthOpenStartTime = null;
+    let mouthOpenDuration = 0;
+    let mouthDisappearStartTime = null;
+    let mouthDisappearDuration = 0;
+    let lastEyeState = { left: 'open', right: 'open' };
+    let alarmAudio = null;
+    let alarmActive = false;
 
     // Initialize alarm audio
     function initAlarm() {
@@ -123,7 +38,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             alarmAudio.pause();
             alarmAudio.currentTime = 0;
         }
-    }    // Initialize alarm on page load
+    }
+
+    // Initialize alarm on page load
     initAlarm();
 
     // Help modal functionality
@@ -153,29 +70,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (event.key === 'Escape' && helpModal.classList.contains('show')) {
             helpModal.classList.remove('show');
         }
-    });    // Enhanced sendCommand function with latency measurement
+    });
+
+    // Properly declared function with connection state check
     const sendCommand = (command) => {
         if (websocket && websocket.readyState === WebSocket.OPEN) {
-            const startTime = performance.now();
-            const commandId = `cmd_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            // Store timestamp for this command
-            commandTimestamps.set(commandId, startTime);
-            
             console.log("Sending command:", command);
-            
-            // Send command with ID for tracking
-            const fullCommand = `SECURE_TOKEN_123-${command}`;
-            websocket.send(fullCommand);
-            
-            // Set timeout to measure latency even without explicit response
-            setTimeout(() => {
-                if (commandTimestamps.has(commandId)) {
-                    calculateLatency(startTime);
-                    commandTimestamps.delete(commandId);
-                }
-            }, 50); // Assume command processed within 50ms if no explicit response
-            
+            websocket.send(`SECURE_TOKEN_123-${command}`);
         } else {
             console.error("WebSocket not connected. Cannot send command:", command);
         }
@@ -229,7 +130,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             document.getElementById(keyMap[event.key]).classList.add("active");
             let command = "Pressed: " + keyMap[event.key];
             sendCommand(command);
-        }        // Handle C key for toggling driving mode
+        }
+
+        // Handle C key for toggling driving mode
         if (event.key === 'c' || event.key === 'C') {
             const modeShift = document.getElementById('mode-shift');
             // Toggle value between 0 and 1
@@ -239,28 +142,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             // Trigger the change event manually
             const changeEvent = new Event('change', { bubbles: true });
             modeShift.dispatchEvent(changeEvent);
-        }
-
-        // Handle P key for ping test
-        if (event.key === 'p' || event.key === 'P') {
-            sendPingCommand();
-        }
-
-        // Handle L key for latency display toggle
-        if (event.key === 'l' || event.key === 'L') {
-            latencyDisplayEnabled = !latencyDisplayEnabled;
-            if (!latencyDisplayEnabled) {
-                const latencyElement = document.getElementById('latency-display');
-                if (latencyElement) latencyElement.innerHTML = '';
-            } else {
-                updateLatencyDisplay();
-            }
-            console.log(`Latency display ${latencyDisplayEnabled ? 'enabled' : 'disabled'}`);
-        }
-
-        // Handle R key for reset latency stats
-        if (event.key === 'r' || event.key === 'R') {
-            resetLatencyStats();
         }
     });
 
@@ -280,38 +161,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
             let command = "Released: " + keyMap[event.key];
             sendCommand(command);
         }
-    });    // WebSocket connection
+    });
+
+    // WebSocket connection
     function connectWebSocket() {
         console.log("Attempting to connect to WebSocket...");
-        websocket = new WebSocket('ws://192.168.4.1/ws');        websocket.onopen = () => {
+        websocket = new WebSocket('ws://192.168.4.1/ws');
+
+        websocket.onopen = () => {
             console.log("WebSocket Connected");
             wsConnected = true;
-            // Send a test ping to measure initial latency
+            // Send a test message to ensure connection is working
             setTimeout(() => {
-                sendPingCommand();
-                // Start periodic latency tests every 10 seconds
-                setInterval(() => {
-                    if (wsConnected) {
-                        sendPingCommand();
-                    }
-                }, 10000);
+                sendCommand('connection-test');
             }, 500);
-        };
-
-        websocket.onmessage = (event) => {
-            console.log('Received message:', event.data);
-            
-            // Handle ping responses for latency measurement
-            if (event.data.includes('pong:')) {
-                const pingId = event.data.split('pong:')[1];
-                const timestampKey = `ping_${pingId}`;
-                
-                if (commandTimestamps.has(timestampKey)) {
-                    const startTime = commandTimestamps.get(timestampKey);
-                    calculateLatency(startTime);
-                    commandTimestamps.delete(timestampKey);
-                }
-            }
         };
 
         websocket.onerror = (error) => {
@@ -477,6 +340,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (mouthDisappearDuration > 0) {
             console.log(`Mouth disappear duration: ${mouthDisappearDuration}ms`);
         }
-    }    // Initialize WebSocket connection
+    }
+
+    // Initialize WebSocket connection
     connectWebSocket();
 });
