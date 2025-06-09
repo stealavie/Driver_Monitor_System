@@ -2,23 +2,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
     let websocket;
     const PYTHON_SERVER_URL = 'http://localhost:5000/process';
     let processingActive = true;
-    let drowsinessAlertCount = 0;
-    let drowsyThreshold = 3; // Number of consecutive drowsy frames to trigger alert
     let wsConnected = false; // Track connection status
     let currentDrivingMode = 'normal'; // Default driving mode
 
     // Drowsiness detection variables
     let eyesClosedStartTime = null;
     let eyesClosedDuration = 0;
-    let blinkStartTime = null;
-    let blinkDuration = 0;
-    let consecutiveBlinkCount = 0;
     let mouthOpenStartTime = null;
     let mouthOpenDuration = 0;
     let mouthDisappearStartTime = null;
     let mouthDisappearDuration = 0;
     let lastEyeState = { left: 'open', right: 'open' };
-    let lastMouthState = 'closed';
     let alarmAudio = null;
     let alarmActive = false;
 
@@ -89,10 +83,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
     };
 
     // Driving mode selector event listeners
-    document.getElementById('mode-shift').addEventListener('change', function() {
+    document.getElementById('mode-shift').addEventListener('change', function () {
         // Cập nhật vị trí của gear-handle dựa trên giá trị
         this.setAttribute('value', this.value);
-        
+
         if (parseInt(this.value) === 0) {
             currentDrivingMode = 'sport';
             console.log("Switching to Sport mode");
@@ -137,7 +131,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             let command = "Pressed: " + keyMap[event.key];
             sendCommand(command);
         }
-        
+
         // Handle C key for toggling driving mode
         if (event.key === 'c' || event.key === 'C') {
             const modeShift = document.getElementById('mode-shift');
@@ -166,14 +160,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
             document.getElementById(keyMap[event.key]).classList.remove("active");
             let command = "Released: " + keyMap[event.key];
             sendCommand(command);
-        } 
+        }
     });
 
     // WebSocket connection
     function connectWebSocket() {
         console.log("Attempting to connect to WebSocket...");
         websocket = new WebSocket('ws://192.168.4.1/ws');
-        
+
         websocket.onopen = () => {
             console.log("WebSocket Connected");
             wsConnected = true;
@@ -182,12 +176,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 sendCommand('connection-test');
             }, 500);
         };
-        
+
         websocket.onerror = (error) => {
             console.error('WebSocket Error:', error);
             wsConnected = false;
         };
-        
+
         websocket.onclose = () => {
             console.log("WebSocket Disconnected");
             wsConnected = false;
@@ -203,14 +197,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
         canvas.width = video.videoWidth || 320;
         canvas.height = video.videoHeight || 240;
 
-        // Process frames at regular intervals
-        const faceMonitorInterval = setInterval(() => {
-            if (!processingActive) return;
+        let isProcessing = false;
+
+        function processFrame() {
+            if (!processingActive || isProcessing) return;
+
+            isProcessing = true;
+            const startTime = Date.now();
 
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-            const imageData = canvas.toDataURL('image/jpeg', 0.9);
+            const imageData = canvas.toDataURL('image/jpeg', 0.75);
 
-            // Send the frame to the Python server for processing
             fetch(PYTHON_SERVER_URL, {
                 method: 'POST',
                 headers: {
@@ -218,21 +215,34 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 },
                 body: JSON.stringify({ frame: imageData })
             })
-            .then(response => response.json())
-            .then(data => {
-                // Update UI with drowsiness detection results
-                updateDriverStatus(data);
-            })
-            .catch(error => {
-                console.error('Error processing frame:', error);
-            });
-        }, 150); // Process frame every 150ms (approximately 6-7 FPS)
+                .then(response => response.json())
+                .then(data => {
+                    updateDriverStatus(data);
+                    const processingTime = Date.now() - startTime;
+                    console.log(`Processing time: ${processingTime}ms`);
 
-        // Cleanup function
+                    // Schedule next frame with adaptive delay
+                    const nextDelay = Math.max(30 - processingTime, 10);
+                    setTimeout(processFrame, nextDelay);
+                })
+                .catch(error => {
+                    console.error('Error processing frame:', error);
+                    setTimeout(processFrame, 100); // Retry after error
+                })
+                .finally(() => {
+                    isProcessing = false;
+                });
+        }
+
+        // Start processing
+        processFrame();
+
+        // Return cleanup function
         return () => {
-            clearInterval(faceMonitorInterval);
+            processingActive = false;
         };
-    }    // Update UI with drowsiness detection results
+    }
+    // Update UI with drowsiness detection results
     function updateDriverStatus(data) {
         // Get DOM elements
         const leftEyeStatus = document.getElementById('left-eye-status');
@@ -246,80 +256,53 @@ document.addEventListener('DOMContentLoaded', (event) => {
         mouthStatus.textContent = data.mouth_state;
 
         const currentTime = Date.now();
-        const frameInterval = 150; // ms between frames
         let alarmTriggered = false;
 
         // Check eye closure conditions
-        const bothEyesClosed = data.left_eye_state === 'closed' && data.right_eye_state === 'closed';
         const anyEyeClosed = data.left_eye_state === 'closed' || data.right_eye_state === 'closed';
 
-        // Track eyes closed for 3+ seconds
-        if (bothEyesClosed) {
+        // Track eyes closed for 2+ seconds
+        if (anyEyeClosed) {
             if (eyesClosedStartTime === null) {
                 eyesClosedStartTime = currentTime;
             }
             eyesClosedDuration = currentTime - eyesClosedStartTime;
-            
-            if (eyesClosedDuration >= 3000) { // 3 seconds
+
+            if (eyesClosedDuration >= 2000) { // 2 seconds
                 alarmTriggered = true;
-                console.log("Alarm: Eyes closed for 3+ seconds");
+                console.log("Alarm: Eyes closed for 2+ seconds");
             }
         } else {
             eyesClosedStartTime = null;
             eyesClosedDuration = 0;
         }
 
-        // Track continuous blinking for 10+ seconds
-        const eyeStateChanged = (data.left_eye_state !== lastEyeState.left) || 
-                               (data.right_eye_state !== lastEyeState.right);
-        
-        if (eyeStateChanged && anyEyeClosed) {
-            consecutiveBlinkCount++;
-            if (blinkStartTime === null) {
-                blinkStartTime = currentTime;
-            }
-            blinkDuration = currentTime - blinkStartTime;
-            
-            // If blinking continuously for 10+ seconds
-            if (blinkDuration >= 10000 && consecutiveBlinkCount >= 10) { // 10 seconds with many blinks
-                alarmTriggered = true;
-                console.log("Alarm: Continuous blinking for 10+ seconds");
-            }
-        } else if (!anyEyeClosed && eyeStateChanged) {
-            // Reset blink tracking if eyes are fully open and state changed
-            if (blinkDuration < 10000) {
-                blinkStartTime = null;
-                blinkDuration = 0;
-                consecutiveBlinkCount = 0;
-            }
-        }
-
-        // Track mouth open for 3+ seconds
+        // Track mouth open for 2+ seconds
         if (data.mouth_state === 'open') {
             if (mouthOpenStartTime === null) {
                 mouthOpenStartTime = currentTime;
             }
             mouthOpenDuration = currentTime - mouthOpenStartTime;
-            
-            if (mouthOpenDuration >= 3000) { // 3 seconds
+
+            if (mouthOpenDuration >= 2000) { // 2 seconds
                 alarmTriggered = true;
-                console.log("Alarm: Mouth open for 3+ seconds");
+                console.log("Alarm: Mouth open for 2+ seconds");
             }
         } else {
             mouthOpenStartTime = null;
             mouthOpenDuration = 0;
         }
 
-        // Track mouth disappear (no detection) for 3+ seconds
+        // Track mouth disappear (no detection) for 2+ seconds
         if (data.mouth_state === 'Không có thông tin') {
             if (mouthDisappearStartTime === null) {
                 mouthDisappearStartTime = currentTime;
             }
             mouthDisappearDuration = currentTime - mouthDisappearStartTime;
-            
-            if (mouthDisappearDuration >= 3000) { // 3 seconds
+
+            if (mouthDisappearDuration >= 2000) { // 2 seconds
                 alarmTriggered = true;
-                console.log("Alarm: Mouth disappeared for 3+ seconds");
+                console.log("Alarm: Mouth disappeared for 2+ seconds");
             }
         } else {
             mouthDisappearStartTime = null;
@@ -331,7 +314,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             drowsinessAlert.textContent = "CẢNH BÁO! Phát hiện dấu hiệu buồn ngủ!";
             drowsinessAlert.className = "alert";
             playAlarm();
-            
+
             // Send alert to ESP32
             sendCommand("alert-drowsy");
         } else {
@@ -348,9 +331,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         // Debug information
         if (eyesClosedDuration > 0) {
             console.log(`Eyes closed duration: ${eyesClosedDuration}ms`);
-        }
-        if (blinkDuration > 0) {
-            console.log(`Blink duration: ${blinkDuration}ms, count: ${consecutiveBlinkCount}`);
         }
         if (mouthOpenDuration > 0) {
             console.log(`Mouth open duration: ${mouthOpenDuration}ms`);

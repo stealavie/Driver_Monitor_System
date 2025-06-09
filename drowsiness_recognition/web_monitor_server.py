@@ -8,17 +8,18 @@ import numpy as np
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from scipy.spatial import distance as dist
+import time
 
 # --- Configuration ---
 EYE_AR_THRESH = 0.2
-MOUTH_AR_THRESH = 0.9
+MOUTH_AR_THRESH = 0.7
 ESP32_IP = "192.168.4.1"
 ESP32_PORT = 80
 
 
 # --- Flask App Setup ---
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=['http://localhost:3000', 'file://'])
 
 # --- Paths ---
 HERE = os.path.dirname(__file__)
@@ -67,10 +68,20 @@ def mouth_aspect_ratio(mouth):
     return (A + B + C) / (2.0 * D)
 
 # --- Flask Endpoints ---
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
-@app.route('/process', methods=['POST'])
+@app.route('/process', methods=['POST', 'OPTIONS'])
 def process_frame():
-    """Receive a base64-encoded JPEG frame, process drowsiness, return JSON."""
+    if request.method == 'OPTIONS':
+        return '', 200
+    
+    start_time = time.time()
+    
     try:
         data = request.get_json(force=True)
         img_data = data.get('frame', '')
@@ -78,98 +89,60 @@ def process_frame():
         if not img_data:
             return jsonify(error='No frame data provided'), 400
 
-        # Decode base64 image
+        # Optimize image processing
         if ',' in img_data:
             img_data = img_data.split(',', 1)[1]
         
-        try:
-            raw = base64.b64decode(img_data)
-            arr = np.frombuffer(raw, dtype=np.uint8)
-            frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        except Exception as e:
-            return jsonify(error=f'Failed to decode image: {str(e)}'), 400
+        # Decode and resize for faster processing
+        raw = base64.b64decode(img_data)
+        arr = np.frombuffer(raw, dtype=np.uint8)
+        frame = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         
         if frame is None:
-            return jsonify(error='Invalid frame - could not decode image'), 400
+            return jsonify(error='Invalid frame'), 400
 
-        # Validate frame dimensions and type
-        if len(frame.shape) != 3 or frame.shape[2] != 3:
-            return jsonify(error='Invalid frame format - expected BGR color image'), 400
-        
-        # Ensure frame is in the correct format for dlib
-        if frame.dtype != np.uint8:
-            frame = frame.astype(np.uint8)
-        
-        print(f"Received frame of shape: {frame.shape}")
+        # Resize frame for faster processing (optional)
+        height, width = frame.shape[:2]
+        if width > 640:  # Resize if too large
+            scale = 640 / width
+            new_width = 640
+            new_height = int(height * scale)
+            frame = cv2.resize(frame, (new_width, new_height))
 
-        # Convert BGR to RGB for dlib (dlib prefers RGB over BGR)
-        try:
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            print(f"Converted frame to RGB: {rgb_frame.shape}")
-        except Exception as e:
-            return jsonify(error=f'Failed to convert to RGB: {str(e)}'), 400
+        # Convert to RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # Ensure RGB frame is correct format
-        if rgb_frame.dtype != np.uint8:
-            rgb_frame = rgb_frame.astype(np.uint8)
-        print(f"RGB frame shape: {rgb_frame.shape}, dtype: {rgb_frame.dtype}")
+        # Face detection
+        faces = detector(rgb_frame, 0)  # Use 0 instead of 1 for faster detection
         
-        # Validate RGB frame
-        if len(rgb_frame.shape) != 3 or rgb_frame.shape[2] != 3:
-            return jsonify(error='Invalid RGB conversion'), 400        # Face detection with RGB image
-        try:
-            print("Detecting faces with RGB...")
-            print(f"Detector type: {type(detector)}")
-            print(f"RGB image shape: {rgb_frame.shape}, dtype: {rgb_frame.dtype}")
-            
-            # Ensure RGB frame is contiguous in memory
-            if not rgb_frame.flags['C_CONTIGUOUS']:
-                rgb_frame = np.ascontiguousarray(rgb_frame)
-            
-            faces = detector(rgb_frame, 1)
-            print(f"Found {len(faces)} faces")
-        except Exception as e:
-            print(f"Face detection error details: {e}")
-            print(f"Error type: {type(e)}")
-            return jsonify(error=f'Face detection failed: {str(e)}'), 500
-
         result = {
-            'left_eye_state': 'Không có thông tin', 
-            'right_eye_state': 'Không có thông tin', 
+            'left_eye_state': 'Không có thông tin',
+            'right_eye_state': 'Không có thông tin',
             'mouth_state': 'Không có thông tin',
             'face_detected': False
         }
 
         if faces:
-            try:
-                # Convert to grayscale only for landmark detection (predictor needs grayscale)
-                gray = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2GRAY)
-                shape = predictor(gray, faces[0])
-                pts = shape_to_np(shape)
+            gray = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2GRAY)
+            shape = predictor(gray, faces[0])
+            pts = shape_to_np(shape)
 
-                leftEAR = eye_aspect_ratio(pts[42:48])
-                rightEAR = eye_aspect_ratio(pts[36:42])
-                result['left_eye_state'] = 'open' if leftEAR > EYE_AR_THRESH else 'closed'
-                result['right_eye_state'] = 'open' if rightEAR > EYE_AR_THRESH else 'closed'
+            leftEAR = eye_aspect_ratio(pts[42:48])
+            rightEAR = eye_aspect_ratio(pts[36:42])
+            result['left_eye_state'] = 'open' if leftEAR > EYE_AR_THRESH else 'closed'
+            result['right_eye_state'] = 'open' if rightEAR > EYE_AR_THRESH else 'closed'
 
-                mar = mouth_aspect_ratio(pts[48:60])
-                result['mouth_state'] = 'open' if mar > MOUTH_AR_THRESH else 'closed'
-                result['face_detected'] = True
-                
-                print(f"Eye states - Left: {result['left_eye_state']}, Right: {result['right_eye_state']}")
-                print(f"Mouth state: {result['mouth_state']}")
-                print(f"EAR values - Left: {leftEAR:.3f}, Right: {rightEAR:.3f}, MAR: {mar:.3f}")                
-            except Exception as e:
-                print(f"Landmark detection failed: {str(e)}")
-                return jsonify(error=f'Landmark detection failed: {str(e)}'), 500
-        else:
-            print("No face detected in frame")
+            mar = mouth_aspect_ratio(pts[48:60])
+            result['mouth_state'] = 'open' if mar > MOUTH_AR_THRESH else 'closed'
+            result['face_detected'] = True
 
-        print(f"Processed frame: {result}")
+        processing_time = (time.time() - start_time) * 1000
+        print(f"Frame processed in {processing_time:.1f}ms")
+        
         return jsonify(result)
-    
+        
     except Exception as e:
-        return jsonify(error=f'Unexpected error: {str(e)}'), 500
+        return jsonify(error=f'Error: {str(e)}'), 500
 
 
 @app.route('/')
