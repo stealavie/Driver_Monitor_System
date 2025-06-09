@@ -45,8 +45,7 @@
                <li>Mũi tên trái (A): Rẽ trái</li>
                <li>Mũi tên phải (D): Rẽ phải</li>
             </ul>
-            
-            <h4>3. CHẾ ĐỘ LÁI</h4>
+              <h4>3. CHẾ ĐỘ LÁI</h4>
             <ul>
                <li>Chuyển đổi chế độ lái bằng cách:</li>
                <li>Kéo thanh trượt lên/xuống giữa hai chế độ</li>
@@ -55,7 +54,19 @@
                <li>Chế độ thể thao: Cung cấp khả năng phản hồi nhanh hơn</li>
             </ul>
             
-            <h4>4. HỆ THỐNG GIÁM SÁT TÀI XẾ</h4>
+            <h4>4. KIỂM TRA ĐỘ TRỄ (LATENCY)</h4>
+            <ul>
+               <li>Hiển thị độ trễ giao tiếp với ESP32:</li>
+               <li>Current: Độ trễ lệnh hiện tại</li>
+               <li>Average: Độ trễ trung bình</li>
+               <li>Max: Độ trễ tối đa đã ghi nhận</li>
+               <li>Các phím tắt:</li>
+               <li>P: Gửi lệnh ping để kiểm tra độ trễ</li>
+               <li>L: Bật/tắt hiển thị độ trễ</li>
+               <li>R: Đặt lại thống kê độ trễ</li>
+            </ul>
+            
+            <h4>5. HỆ THỐNG GIÁM SÁT TÀI XẾ</h4>
             <ul>
                <li>Thông tin trạng thái:</li>
                <li>Mắt trái: Mở/Đóng</li>
@@ -89,11 +100,18 @@
                <li>Thanh trượt lên để chọn chế độ thể thao</li>
                <li>Thanh trượt xuống để chọn chế độ bình thường</li>
             </ul>
-            
-            <h4>4. Giám sát trạng thái tài xế:</h4>
+              <h4>4. Giám sát trạng thái tài xế:</h4>
             <ul>
                <li>Quan sát trạng thái mắt và miệng được hiển thị bên phải</li>
                <li>Chú ý đến cảnh báo khi hệ thống phát hiện dấu hiệu buồn ngủ</li>
+            </ul>
+
+            <h4>5. Kiểm tra độ trễ kết nối:</h4>
+            <ul>
+               <li>Theo dõi thông số độ trễ ở panel bên phải</li>
+               <li>Nhấn nút "Test Ping" hoặc phím P để kiểm tra độ trễ</li>
+               <li>Nhấn nút "Reset" hoặc phím R để đặt lại thống kê</li>
+               <li>Độ trễ tốt: dưới 50ms, chấp nhận được: dưới 100ms</li>
             </ul>
          </div>
          
@@ -147,8 +165,7 @@
             </div>
          </div>
          <div class="column">
-            <div class="info-panel">
-               <!-- Driver Monitor Status Section -->
+            <div class="info-panel">               <!-- Driver Monitor Status Section -->
                <div class="driver-monitor">
                   <h3>Trạng thái tài xế</h3>
                   <div class="info-item">
@@ -166,6 +183,22 @@
                   <div class="info-item alert-item">
                      <span class="info-label">Trạng thái:</span>
                      <span id="drowsiness-alert">Không có thông tin</span>
+                  </div>
+               </div>
+
+               <!-- Latency Monitor Status Section -->
+               <div class="latency-monitor">
+                  <h3>Độ trễ điều khiển</h3>
+                  <div id="latency-display">
+                     <div class="latency-stats">
+                        <span>Current: --ms</span>
+                        <span>Average: --ms</span>
+                        <span>Max: --ms</span>
+                     </div>
+                  </div>
+                  <div class="latency-controls">
+                     <button id="ping-test-btn" onclick="sendPingCommand()">Test Ping (P)</button>
+                     <button id="reset-latency-btn" onclick="resetLatencyStats()">Reset (R)</button>
                   </div>
                </div>
             </div>   
