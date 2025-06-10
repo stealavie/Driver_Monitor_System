@@ -1,6 +1,9 @@
 import os
 import base64
 import socket
+import csv
+import threading
+from datetime import datetime
 
 import cv2
 import dlib
@@ -15,6 +18,11 @@ EYE_AR_THRESH = 0.2
 MOUTH_AR_THRESH = 0.7
 ESP32_IP = "192.168.4.1"
 ESP32_PORT = 80
+
+# --- CSV Logging Configuration ---
+CSV_FILE_PATH = os.path.join(os.path.dirname(__file__), "processing_times.csv")
+processing_times = []
+processing_times_lock = threading.Lock()
 
 
 # --- Flask App Setup ---
@@ -67,6 +75,42 @@ def mouth_aspect_ratio(mouth):
     D = dist.euclidean(mouth[0], mouth[6])
     return (A + B + C) / (2.0 * D)
 
+
+def initialize_csv():
+    """Initialize CSV file with headers if it doesn't exist."""
+    if not os.path.exists(CSV_FILE_PATH):
+        with open(CSV_FILE_PATH, 'w', newline='', encoding='utf-8') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(['time', 'processing_time'])
+
+
+def save_average_processing_time():
+    """Calculate and save average processing time every second."""
+    while True:
+        time.sleep(1)  # Wait for 1 second
+        
+        with processing_times_lock:
+            if processing_times:
+                # Calculate average processing time
+                avg_processing_time = sum(processing_times) / len(processing_times)
+                current_time = datetime.now().strftime('%H:%M:%S')
+                
+                # Save to CSV
+                with open(CSV_FILE_PATH, 'a', newline='', encoding='utf-8') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow([current_time, f"{avg_processing_time:.2f}"])
+                
+                print(f"Saved to CSV: {current_time}, Average processing time: {avg_processing_time:.2f}ms")
+                
+                # Clear the list for the next second
+                processing_times.clear()
+
+
+def add_processing_time(processing_time):
+    """Add a processing time to the list for averaging."""
+    with processing_times_lock:
+        processing_times.append(processing_time)
+
 # --- Flask Endpoints ---
 @app.after_request
 def after_request(response):
@@ -111,8 +155,7 @@ def process_frame():
 
         # Convert to RGB
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        
-        # Face detection
+          # Face detection
         faces = detector(rgb_frame, 0)  # Use 0 instead of 1 for faster detection
         
         result = {
@@ -139,6 +182,9 @@ def process_frame():
         processing_time = (time.time() - start_time) * 1000
         print(f"Frame processed in {processing_time:.1f}ms")
         
+        # Add processing time to the collection for CSV logging
+        add_processing_time(processing_time)
+        
         return jsonify(result)
         
     except Exception as e:
@@ -154,5 +200,13 @@ def index():
 
 
 if __name__ == '__main__':
+    # Initialize CSV file and start the logging thread
+    initialize_csv()
+    
+    # Start the CSV logging thread in daemon mode
+    csv_thread = threading.Thread(target=save_average_processing_time, daemon=True)
+    csv_thread.start()
+    
     print(f"Server running on http://0.0.0.0:5000, serving {STATIC_FOLDER}")
+    print(f"Processing times will be logged to: {CSV_FILE_PATH}")
     app.run(host='0.0.0.0', port=5000, debug=False)
