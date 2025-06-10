@@ -10,9 +10,7 @@ Dự án này là một hệ thống toàn diện sử dụng thị giác máy t
 
 ## 🎥 Demo
 
-*(Thêm ảnh GIF hoặc video demo của sản phẩm tại đây để mô tả trực quan)*
-
-Thêm link tại đây xD
+https://github.com/stealavie/Driver_Monitor_System/issues/1#issue-3134301059
 
 ## ✨ Tính Năng Nổi Bật
 
