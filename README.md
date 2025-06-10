@@ -32,7 +32,12 @@ https://github.com/user-attachments/assets/009065f2-5ae4-4973-8478-ca242ac92624
 - **Frontend**:
   - **HTML/CSS/JavaScript**: Xây dựng giao diện người dùng web.
 - **Phần cứng**:
-  - **ESP32-CAM**: Module chịu trách nhiệm điều khiển xe và có thể là nguồn cung cấp hình ảnh.
+  - **ESP32**: Module chịu trách nhiệm là bộ não điều khiển xe.
+  - **L298N**: Điều khiển xoay các động cơ motor.
+  - **2 động cơ motor**: Điều khiển xe thực hiện tiến lùi, rẽ trái phải.
+  - **ESP32-CAM**: Đóng vai trò là camera hành trình của xe.
+  - **Mạch sạc 3S 40A**: Kiểm soát dòng điện & điện áp.
+  - **Giảm áp IM2596 DC/DC**: Giảm điện áp từ nguồn đầu vào.
 
 ## 🚀 Cài đặt & Khởi chạy
 
@@ -42,7 +47,7 @@ https://github.com/user-attachments/assets/009065f2-5ae4-4973-8478-ca242ac92624
 
 ### Hướng dẫn cài đặt
 
-1.  **Clone a repository về máy**
+1.  **Clone repository về máy**
     ```bash
     git clone <your-repository-link>
     cd <repository-folder>
@@ -97,7 +102,6 @@ https://github.com/user-attachments/assets/009065f2-5ae4-4973-8478-ca242ac92624
 
 ## 📂 Cấu Trúc Dự Án
 ```
-.
 ├── README.md                   # File README
 ├── web_monitor_server.py       # File Flask server chính, xử lý logic backend
 ├── requirements.txt            # Danh sách các thư viện Python
