@@ -10,7 +10,7 @@ Dự án này là một hệ thống toàn diện sử dụng thị giác máy t
 
 ## 🎥 Demo
 
-https://github.com/stealavie/Driver_Monitor_System/issues/1#issue-3134301059
+[https://github.com/stealavie/Driver_Monitor_System/issues/1#issue-3134301059](https://github.com/user-attachments/assets/009065f2-5ae4-4973-8478-ca242ac92624)
 
 ## ✨ Tính Năng Nổi Bật
 
