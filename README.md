@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/009065f2-5ae4-4973-8478-ca242ac92624
 - 🔊 **Cảnh báo đa phương thức**: Tự động phát âm thanh cảnh báo (`alarm.wav`) và hiển thị cảnh báo trực quan trên giao diện khi phát hiện dấu hiệu nguy hiểm.
 - 🚗 **Giao diện điều khiển xe**: Tích hợp giao diện web cho phép người dùng gửi lệnh điều khiển (tiến, lùi, trái, phải) tới xe (thông qua ESP32).
 - 🌐 **Giao diện giám sát trên Web**: Toàn bộ hệ thống được quản lý và theo dõi qua một giao diện web trực quan, dễ sử dụng tại `http://127.0.0.1:5000`.
-- 🔌 **Tích hợp phần cứng ESP32**: Được thiết kế để kết nối và giao tiếp với module ESP32-CAM, đóng vai trò cầu nối giữa phần mềm và phần cứng của xe.
+- 🔌 **Tích hợp phần cứng ESP32**: Được thiết kế để kết nối và giao tiếp với module ESP32, đóng vai trò cầu nối giữa phần mềm và phần cứng của xe.
 - ✅ **Kiểm tra kết nối**: Tự động kiểm tra và thông báo trạng thái kết nối với ESP32 trước khi khởi động các tính năng chính.
 
 ## 🛠️ Công Nghệ Sử Dụng
